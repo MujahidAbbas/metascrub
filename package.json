@@ -1,0 +1,43 @@
+{
+  "name": "metascrub",
+  "version": "1.0.0",
+  "description": "Edit & strip PDF metadata — 100% in your browser. Nothing uploaded, ever.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "keywords": [
+    "pdf",
+    "metadata",
+    "xmp",
+    "privacy",
+    "client-side",
+    "astro",
+    "svelte"
+  ],
+  "author": "Mujahid Abbas",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/svelte": "^8.1.2",
+    "@fontsource-variable/ibm-plex-sans": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^6.4.4",
+    "client-zip": "^2.5.0",
+    "pdf-lib": "^1.17.1",
+    "svelte": "^5.56.3",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

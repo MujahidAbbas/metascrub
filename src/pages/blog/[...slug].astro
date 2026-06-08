@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<BaseLayout title={`${post.data.title} | MetaScrub`} description={post.data.description} path={`/blog/${post.id}`}>
+  <article class="mx-auto max-w-2xl px-5 pt-16 pb-10">
+    <a href="/blog" class="font-mono text-xs text-muted transition-colors hover:text-accent">← all posts</a>
+    <h1 class="mt-6 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{post.data.title}</h1>
+    <div class="mt-4 font-mono text-xs text-faint">{fmt(post.data.pubDate)}</div>
+
+    <div class="prose mt-10">
+      <Content />
+    </div>
+
+    <div class="mt-14 flex flex-wrap gap-3 border-t border-border pt-8">
+      <a href="/scrub" class="rounded-md bg-redact px-5 py-3 font-mono text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">▮ Scrub a PDF</a>
+      <a href="/edit" class="rounded-md border border-border-bright bg-surface px-5 py-3 font-mono text-sm font-semibold text-fg transition-colors hover:border-accent hover:text-accent">Edit metadata →</a>
+    </div>
+  </article>
+</BaseLayout>

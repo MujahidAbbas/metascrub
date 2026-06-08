@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+/* ── MetaScrub design tokens ──────────────────────────────────────────────
+   "Declassification lab": near-black surfaces, acid-lime as the active/terminal
+   accent, redaction-red for destructive scrub actions. Mono for data, sans for
+   prose. Fonts are self-hosted (Fontsource) — no third-party network calls. */
+@theme {
+  --color-bg: #0a0b0d;
+  --color-surface: #111317;
+  --color-surface-2: #171a1f;
+  --color-border: #23272e;
+  --color-border-bright: #2f343c;
+  --color-fg: #e8e9ec;
+  --color-muted: #8a919c;
+  --color-faint: #5b626c;
+  --color-accent: #b6f33d; /* acid lime — active / edit / terminal */
+  --color-accent-dim: #7c9e2a;
+  --color-redact: #ff4d4d; /* redaction red — scrub / destructive */
+
+  --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Light theme — toggled via `.light` on <html>. Unlayered so it overrides the
+   @theme defaults. `text-bg` flips with the theme, so accent fills stay legible
+   with a darker light-mode accent. */
+html.light {
+  color-scheme: light;
+  --color-bg: #f6f7f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef0ea;
+  --color-border: #e4e6de;
+  --color-border-bright: #d2d5cb;
+  --color-fg: #15171b;
+  --color-muted: #565d67;
+  --color-faint: #969ca4;
+  --color-accent: #4f7a0d;
+  --color-accent-dim: #6f9a2a;
+  --color-redact: #d83333;
+}
+
+/* Theme-toggle icons: sun in dark mode (tap → light), moon in light mode. */
+.theme-icon-moon { display: none; }
+html.light .theme-icon-sun { display: none; }
+html.light .theme-icon-moon { display: inline; }
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: #0a0b0d;
+  }
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-bright);
+    border: 3px solid var(--color-bg);
+    border-radius: 999px;
+  }
+}
+
+/* Faint engineering grid + top glow — atmosphere, not decoration overload. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-border) 55%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, #000 35%, transparent 78%);
+  mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, #000 35%, transparent 78%);
+}
+
+/* Redaction bar — the signature motif. A black/lime block that wipes over text. */
+.redact {
+  position: relative;
+  white-space: nowrap;
+}
+.redact::after {
+  content: "";
+  position: absolute;
+  inset: -2px -4px;
+  background: var(--color-redact);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: redact-sweep 0.6s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+@keyframes redact-sweep {
+  to { transform: scaleX(1); }
+}
+
+/* Staggered page-load reveal. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise {
+  opacity: 0;
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.caret::after {
+  content: "▍";
+  margin-left: 1px;
+  color: var(--color-accent);
+  animation: caret-blink 1.1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .redact::after { animation: none; }
+  .rise { opacity: 1; }
+  .redact::after { transform: scaleX(1); }
+}
+
+/* Article prose — tuned for the dark theme, no typography plugin needed. */
+.prose {
+  color: var(--color-muted);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+.prose > * + * { margin-top: 1.25em; }
+.prose h2 {
+  color: var(--color-fg);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2.25em;
+  margin-bottom: 0.2em;
+}
+.prose h3 {
+  color: var(--color-fg);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.75em;
+}
+.prose strong { color: var(--color-fg); font-weight: 600; }
+.prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
+  text-underline-offset: 3px;
+}
+.prose a:hover { text-decoration-color: var(--color-accent); }
+.prose ul { padding-left: 1.25em; list-style: none; }
+.prose ul > li { position: relative; padding-left: 1.25em; }
+.prose ul > li + li { margin-top: 0.5em; }
+.prose ul > li::before {
+  content: "▮";
+  position: absolute;
+  left: 0;
+  color: var(--color-accent-dim);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  top: 0.45em;
+}
+.prose ol { padding-left: 1.4em; }
+.prose ol > li { margin-top: 0.5em; }
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--color-fg);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+}
