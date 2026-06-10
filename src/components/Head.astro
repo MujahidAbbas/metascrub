@@ -11,8 +11,8 @@ const {
   path = '',
 } = Astro.props;
 
-const canonical = new URL(path, Astro.site ?? 'https://metascrub.app').href;
-const ogImage = new URL('/og.png', Astro.site ?? 'https://metascrub.app').href;
+const canonical = new URL(path, Astro.site ?? 'https://metascrub.vercel.app').href;
+const ogImage = new URL('/og.png', Astro.site ?? 'https://metascrub.vercel.app').href;
 ---
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />

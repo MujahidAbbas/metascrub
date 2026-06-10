@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build
 export default defineConfig({
-  site: 'https://metascrub.app', // provisional — update at launch
+  site: 'https://metascrub.vercel.app', // hosted on Vercel; no custom domain yet
   integrations: [svelte(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
