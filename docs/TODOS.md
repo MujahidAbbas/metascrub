@@ -16,7 +16,8 @@
 - Engine (pdf-lib) loads at idle, not during hydration: island chunk 446 KB → 23 KB.
 - Batch: results matched by position, not filename; zip names de-duplicated; button no longer
   sticks on "Working…" if zipping throws.
-- `trailingSlash: 'never'`: sitemap, canonicals and links agree.
+- `trailingSlash: 'never'`: sitemap, canonicals and links agree. `vercel.json` `"trailingSlash": false`
+  308s `/scrub/` to `/scrub` (it served 200 on both, a duplicate URL).
 
 ## Waiting on Mujahid
 
@@ -25,7 +26,8 @@
   (both June commits show `vercel[bot]` Production deployments).
   The branch preview (behind Vercel login) was checked 2026-10-15: CSP meta served, same-origin
   fetch blocked, page hydrates, scrub of the PDFKit fixture reports the same 8 removals as locally.
-- After the merge: make the repo public, then re-check the live site.
+- After the merge: make the repo public, then re-check the live site: `/scrub/` 308s to `/scrub`,
+  `sitemap-0.xml` has no trailing slashes, CSP meta present. Resubmit the sitemap in Search Console.
 
 ## Follow-ups (not done, deliberately)
 
@@ -38,7 +40,11 @@
 - pdf-lib writes Info Keywords space-joined, so multi-word keywords lose boundaries in Info (XMP keeps them).
 - Embedded file attachments, form field values and document JavaScript are content, not touched.
   Attachments carry their own metadata.
-- `/scrub/` still serves 200 on Vercel; a `vercel.json` `"trailingSlash": false` would 308 it.
+- A failed batch zip resets the button, but the error is an unhandled rejection: nothing is shown to the user.
+- CSP is a meta tag, so `frame-ancestors` (header-only) is unset; add it under `headers` in `vercel.json` if wanted.
+  The full CSP stays in the meta: a header copy would hand-repeat Astro's build-time hashes.
+- Engine still fetches at idle on /scrub and /edit (~190 KB gz) for visitors who never drop a file.
+  Kept: drop-time loading would add that fetch to every first use and break the tool offline.
 - Batch runs on the main thread (R5); a Web Worker if large batches freeze the UI.
 - Encrypted PDFs rejected; `@cantoo/pdf-lib` (maintained fork, 2.11.1) reads them but is a new dependency.
   pdf-lib 1.17.1 last published 2022-05.
