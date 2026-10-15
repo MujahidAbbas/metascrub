@@ -19,17 +19,20 @@
 - `trailingSlash: 'never'`: sitemap, canonicals and links agree. `vercel.json` `"trailingSlash": false`
   308s `/scrub/` to `/scrub` (it served 200 on both, a duplicate URL).
 
+## Production — 2026-10-15
+
+- `upgrade-2026-10` fast-forwarded into `main` (0be1bb4 → d58c153); Vercel deployed it to Production.
+  Before the merge the branch preview (behind Vercel login) showed: CSP meta served, same-origin fetch
+  blocked, page hydrates, the PDFKit fixture scrub reports the same 8 removals as locally, `/scrub/`
+  and `/edit/` land on the slash-less URL.
+- Live check after deploy (curl): `/scrub/`, `/edit/`, `/blog/` 308 to the slash-less URL; `/scrub`
+  200 with canonical `/scrub`; `sitemap-0.xml` has no trailing slashes; CSP meta with
+  `connect-src 'none'` served; island chunk 22.9 KB.
+
 ## Waiting on Mujahid
 
 - Make `MujahidAbbas/metascrub` public. Until then the site's "Open source" claim is false.
-- Merge `upgrade-2026-10` into `main`. Vercel's GitHub app deploys `main` straight to Production
-  (both June commits show `vercel[bot]` Production deployments).
-  The branch preview (behind Vercel login) was checked 2026-10-15: CSP meta served, same-origin
-  fetch blocked, page hydrates, scrub of the PDFKit fixture reports the same 8 removals as locally.
-  Rechecked at 77af2db: `/scrub/` and `/edit/` land on the slash-less URL (1 redirect, then 200),
-  island hydrates, engine chunk fetched, same-origin fetch still blocked.
-- After the merge: make the repo public, then re-check the live site: `/scrub/` 308s to `/scrub`,
-  `sitemap-0.xml` has no trailing slashes, CSP meta present. Resubmit the sitemap in Search Console.
+- Resubmit the sitemap in Search Console (access for metascrub.vercel.app not confirmed).
 
 ## Follow-ups (not done, deliberately)
 
