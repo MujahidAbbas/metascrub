@@ -41,7 +41,12 @@
   let entries = $state<Entry[]>([]);
   let editForm = $state<Metadata>({});
   let busy = $state(false);
+  let skipped = $state<string[]>([]);
   let prefilled = false;
+  // Values copied into the form from a lone file. A batch edit must not stamp
+  // one file's values onto the rest, so they are cleared once a second file
+  // arrives; anything the user typed stays.
+  let prefill: Metadata = {};
   let nextId = 0;
 
   const ready = $derived(entries.filter((e) => e.status === 'ready' || e.status === 'done'));
@@ -52,7 +57,22 @@
     entries = entries.map((e) => (e.id === id ? { ...e, ...p } : e));
   }
 
-  async function addFiles(files: File[]) {
+  const isPdf = (f: File) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+
+  function clearPrefill() {
+    const next = { ...editForm };
+    for (const k of Object.keys(prefill) as (keyof Metadata)[]) {
+      if (JSON.stringify(next[k]) === JSON.stringify(prefill[k])) delete next[k];
+    }
+    editForm = next;
+    prefill = {};
+  }
+
+  async function addFiles(picked: File[]) {
+    skipped = picked.filter((f) => !isPdf(f)).map((f) => f.name);
+    const files = picked.filter(isPdf);
+    const batch = entries.length + files.length > 1;
+    if (batch) clearPrefill();
     for (const file of files) {
       const id = nextId++;
       entries = [...entries, { id, name: file.name, bytes: new Uint8Array(), status: 'reading' }];
@@ -60,13 +80,15 @@
         const bytes = new Uint8Array(await file.arrayBuffer());
         const meta = await (await engine()).readMetadata(bytes);
         patch(id, { bytes, meta, status: 'ready' });
-        if (mode === 'edit' && !prefilled) {
+        // entries is re-checked after the await: "+ add more" may have added a file meanwhile.
+        if (mode === 'edit' && !prefilled && !batch && entries.length === 1) {
           prefilled = true;
           const m = meta.metadata;
-          editForm = {
+          prefill = {
             title: m.title, author: m.author, subject: m.subject,
             keywords: m.keywords, creator: m.creator, producer: m.producer,
           };
+          editForm = { ...prefill };
         }
       } catch (e) {
         patch(id, { status: 'error', error: (e as Error).message });
@@ -77,6 +99,8 @@
   function reset() {
     entries = [];
     editForm = {};
+    prefill = {};
+    skipped = [];
     prefilled = false;
   }
 
@@ -176,6 +200,9 @@
 </script>
 
 <div class="space-y-6">
+  {#if skipped.length}
+    <p class="font-mono text-xs text-redact">Skipped {skipped.join(', ')}: not a PDF.</p>
+  {/if}
   {#if entries.length === 0}
     <Dropzone onfiles={addFiles} {busy} accent={accent} />
   {:else}
@@ -199,25 +226,30 @@
     {#if isMulti}
       <ul class="space-y-px overflow-hidden rounded-lg border border-border bg-border">
         {#each entries as e (e.id)}
-          <li class="flex items-center justify-between gap-3 bg-surface px-4 py-2.5 font-mono text-sm">
-            <span class="flex min-w-0 items-center gap-2.5">
-              <span class="text-faint">▮</span>
-              <span class="truncate text-fg">{e.name}</span>
-            </span>
-            <span class="flex shrink-0 items-center gap-3">
-              {#if e.status === 'reading'}<span class="text-muted">reading…</span>
-              {:else if e.status === 'error'}<span class="text-redact" title={e.error}>error</span>
-              {:else if e.status === 'done'}<span class="text-accent">{isScrub ? `−${e.removed?.length ?? 0}` : 'done'}</span>
-              {:else}<span class="text-muted">{displayRows(e.meta).length} fields</span>{/if}
-              <button onclick={() => remove(e.id)} class="text-faint hover:text-redact">✕</button>
-            </span>
+          <li class="bg-surface px-4 py-2.5 font-mono text-sm">
+            <div class="flex items-center justify-between gap-3">
+              <span class="flex min-w-0 items-center gap-2.5">
+                <span class="text-faint">▮</span>
+                <span class="truncate text-fg">{e.name}</span>
+              </span>
+              <span class="flex shrink-0 items-center gap-3">
+                {#if e.status === 'reading'}<span class="text-muted">reading…</span>
+                {:else if e.status === 'error'}<span class="text-redact">error</span>
+                {:else if e.status === 'done'}<span class="text-accent">{isScrub ? `−${e.removed?.length ?? 0}` : 'done'}</span>
+                {:else}<span class="text-muted">{displayRows(e.meta).length} fields</span>{/if}
+                <button onclick={() => remove(e.id)} class="text-faint hover:text-redact">✕</button>
+              </span>
+            </div>
+            {#if e.status === 'error'}<p class="mt-1 pl-5 text-xs text-redact">{e.error}</p>{/if}
           </li>
         {/each}
       </ul>
     {/if}
 
     <!-- ── EDIT MODE ── -->
-    {#if mode === 'edit'}
+    {#if mode === 'edit' && single?.status === 'error'}
+      <div class="rounded-xl border border-redact/40 bg-redact/5 p-6 font-mono text-sm text-redact">{single.error}</div>
+    {:else if mode === 'edit'}
       <div class="rounded-xl border border-border bg-surface p-6">
         <MetadataForm bind:value={editForm} scope={isMulti ? `Applied to all ${ready.length} files (blank fields are left untouched)` : undefined} />
         <div class="mt-6 flex items-center gap-3">

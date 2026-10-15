@@ -61,8 +61,8 @@ export class EncryptedPdfError extends Error {
 }
 
 export class InvalidPdfError extends Error {
-  constructor(detail?: string) {
-    super(`This file does not look like a valid PDF.${detail ? ` (${detail})` : ''}`);
+  constructor() {
+    super('This file does not look like a valid PDF.');
     this.name = 'InvalidPdfError';
   }
 }

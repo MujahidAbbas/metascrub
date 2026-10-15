@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Metadata } from '../lib/types';
 
   interface Props {
@@ -22,10 +23,18 @@
   }
 
   // Keywords are an array internally; edit them as a comma-separated string.
-  // Derived from `value` directly (no local copy) so async prefill is reflected
-  // and user edits don't get clobbered.
+  // The raw text is kept as typed, so "tax return, " keeps its trailing
+  // separator; it is rebuilt from `value` only when the keywords change from
+  // outside (prefill, start over).
+  const parse = (text: string) => text.split(',').map((k) => k.trim()).filter(Boolean);
+  let keywordText = $state('');
+  $effect(() => {
+    const kws = value.keywords ?? [];
+    if (parse(untrack(() => keywordText)).join('\n') !== kws.join('\n')) keywordText = kws.join(', ');
+  });
   function setKeywords(text: string) {
-    value.keywords = text.split(',').map((k) => k.trim()).filter(Boolean);
+    keywordText = text;
+    value.keywords = parse(text);
   }
 </script>
 
@@ -55,7 +64,7 @@
     <input
       type="text"
       placeholder="comma, separated, keywords"
-      value={(value.keywords ?? []).join(', ')}
+      value={keywordText}
       oninput={(e) => setKeywords((e.currentTarget as HTMLInputElement).value)}
       class="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 font-mono text-sm text-fg outline-none transition-colors placeholder:text-faint focus:border-accent"
     />

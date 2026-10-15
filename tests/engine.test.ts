@@ -87,6 +87,12 @@ describe('writeMetadata', () => {
     expect(xml).toContain('<xmp:CreateDate>2024-01-15T09:30:00.000Z</xmp:CreateDate>');
   });
 
+  it('writes non-ASCII text to XMP as UTF-8', async () => {
+    const m = { title: 'Résumé – José Müller', author: 'مجاہد عباس', subject: '日本語 🚀', keywords: ['café', 'naïve'] };
+    const out = await writeMetadata(await makeBarePdf(), m);
+    expect((await readMetadata(out)).xmp).toMatchObject(m);
+  });
+
   it('drops an earlier save\'s Info dict', async () => {
     const edited = await writeMetadata(await makeIncrementalPdf(), { title: 'X' });
     expect(await deepText(edited)).not.toContain('John Doe');
@@ -207,5 +213,16 @@ describe('xmp helpers', () => {
     expect(parsed.title).toBe('A & B <ok>');
     expect(parsed.author).toBe('O’Hara');
     expect(parsed.keywords).toEqual(['x', 'y']);
+  });
+
+  it('decodes character and entity references in XMP values', () => {
+    const xml = '<dc:creator><rdf:Seq><rdf:li>Jos&#xE9; &quot;Pepe&quot; O&#8217;Hara &apos;x&apos; &amp;lt;</rdf:li></rdf:Seq></dc:creator>';
+    expect(parseXmp(xml).author).toBe('José "Pepe" O’Hara \'x\' &lt;');
+  });
+});
+
+describe('errors', () => {
+  it('rejects a non-PDF with a plain message, no parser detail', async () => {
+    await expect(readMetadata(new TextEncoder().encode('not a pdf'))).rejects.toThrow(/^This file does not look like a valid PDF\.$/);
   });
 });

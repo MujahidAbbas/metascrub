@@ -19,7 +19,7 @@ export async function loadPdf(bytes: Uint8Array): Promise<PDFDocument> {
     const name = (err as Error)?.name ?? '';
     const msg = (err as Error)?.message ?? '';
     if (name.includes('Encrypted') || /encrypt/i.test(msg)) throw new EncryptedPdfError();
-    throw new InvalidPdfError(msg);
+    throw new InvalidPdfError();
   }
 }
 

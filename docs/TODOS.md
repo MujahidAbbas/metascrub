@@ -39,6 +39,28 @@
   `sitemap-index.xml` submitted; GSC showed "Couldn't fetch" with no "Last read" right after.
   Both sitemaps return 200 `application/xml` to a Googlebot UA, valid XML, no X-Robots-Tag.
 
+## Done — full test pass 2026-10-15 (branch `fix/test-pass-2026-10`)
+
+Engine probed in node (outputs checked with poppler `pdfinfo`/`pdftotext`/`pdftoppm`), UI driven in Chrome
+against `astro preview`, live site checked with curl (it served the same asset hashes as `main`).
+Scrub held up everywhere: no metadata left, text and render identical, comment text kept, re-scrub finds nothing.
+Bugs found and fixed:
+
+- Batch edit stamped the first file's Title/Creator/Producer onto every file (form was prefilled from file 1
+  under "blank fields are left untouched"). The form now starts blank for a batch; adding files to a single-file
+  session clears the prefilled values and keeps anything typed.
+- Non-ASCII edits corrupted the XMP: pdf-lib's `context.stream(string)` keeps one byte per char, so "José"
+  became Latin-1 bytes and Urdu/CJK text was lost (BOM too). `setXmp` now encodes UTF-8.
+- Header overflowed every phone width (needed 433 px): the GitHub button is now `hidden sm:block` (the footer
+  keeps the link). Fits from 360 px up.
+- Edit mode showed no error for an encrypted or invalid file (blank form, disabled button). It now shows it.
+- Keywords field rewrote itself while typing ("tax return, " snapped to "tax return"). Raw text is kept now.
+- XMP character/entity references (`&#xE9;`, `&quot;`) are decoded; non-PDFs are reported as skipped on both
+  inputs; list errors show inline (they were hover-only); error messages no longer carry pdf-lib parser detail.
+
+3 new engine tests (23 total), each failing before its fix. The Svelte fixes have no unit tests (no component
+test setup; adding one is a new dependency); they were checked in the browser before and after.
+
 ## Waiting on Mujahid
 
 - Recheck GSC Sitemaps after 2026-10-17: status should be "Success" with 7 discovered pages.
@@ -65,4 +87,7 @@
   pdf-lib 1.17.1 last published 2022-05.
 - No analytics. Custom domain undecided; moving to one means a new GSC property and 301s from vercel.app.
 - `astro check` needs `@astrojs/check` (not installed); Svelte files are not type-checked.
+- Header still overflows at 320 px (iPhone SE 1st gen) by ~28 px; 360 px and up fit. Tighter nav padding below `sm` would fix it.
+- No branded 404: Vercel serves its default page. An `src/pages/404.astro` would cover it.
+- No component tests for the Svelte island; UI behaviour is verified by hand in the browser.
 - `npm approve-scripts` has `fsevents` pending (optional macOS watcher).

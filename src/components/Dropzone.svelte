@@ -10,12 +10,11 @@
   let dragging = $state(false);
   let input: HTMLInputElement;
 
+  // Non-PDFs are passed on too: the parent filters them and says what it skipped.
   function pick(list: FileList | null) {
     if (!list) return;
-    const pdfs = Array.from(list).filter(
-      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
-    );
-    if (pdfs.length) onfiles(multiple ? pdfs : pdfs.slice(0, 1));
+    const files = Array.from(list);
+    if (files.length) onfiles(multiple ? files : files.slice(0, 1));
   }
 
   function onDrop(e: DragEvent) {

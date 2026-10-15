@@ -117,8 +117,15 @@ const firstMatch = (xml: string, re: RegExp): string | undefined => {
   return m?.[1]?.trim() || undefined;
 };
 
+const ENTITIES: Record<string, string> = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' };
+
+/** Decode XML entity and character references in one pass, so "&amp;lt;" stays "&lt;". */
 const unesc = (s: string): string =>
-  s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  s.replace(/&(?:#x([0-9a-fA-F]+)|#([0-9]+)|(lt|gt|quot|apos|amp));/g, (ref, hex, dec, name) => {
+    if (name) return ENTITIES[name]!;
+    const cp = hex ? parseInt(hex, 16) : Number(dec);
+    return cp <= 0x10ffff ? String.fromCodePoint(cp) : ref;
+  });
 
 /** Parse the fields we care about out of an XMP XML string. */
 export function parseXmp(xml: string): Metadata {
@@ -162,7 +169,8 @@ export function conformanceProps(xml: string): ConformanceProp[] {
 export function setXmp(doc: PDFDocument, xml: string): void {
   const oldRef = doc.catalog.get(PDFName.of('Metadata')) as PDFRef | undefined;
   if (oldRef) doc.context.delete(oldRef);
-  const stream = doc.context.stream(xml, { Type: 'Metadata', Subtype: 'XML' });
+  // Encode as UTF-8 here: given a string, pdf-lib keeps one byte per char, which mangles non-ASCII text.
+  const stream = doc.context.stream(new TextEncoder().encode(xml), { Type: 'Metadata', Subtype: 'XML' });
   const ref = doc.context.register(stream);
   doc.catalog.set(PDFName.of('Metadata'), ref);
 }
