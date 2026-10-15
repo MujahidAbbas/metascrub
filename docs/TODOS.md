@@ -29,12 +29,17 @@
   200 with canonical `/scrub`; `sitemap-0.xml` has no trailing slashes; CSP meta with
   `connect-src 'none'` served; island chunk 22.9 KB.
 
+- Repo made public 2026-10-15, after a check of all history (both branches): no secrets or env files,
+  fixtures carry only made-up names, commit email already public on 5 other repos.
+
 ## Waiting on Mujahid
 
-- Make `MujahidAbbas/metascrub` public. Until then the site's "Open source" claim is false.
 - Resubmit the sitemap in Search Console (access for metascrub.vercel.app not confirmed).
 
 ## Follow-ups (not done, deliberately)
+
+- Header and footer "GitHub" links (`BaseLayout.astro`) and the README point to the profile, not
+  `github.com/MujahidAbbas/metascrub`, so the "Open source" claim has no link to the source.
 
 - Real Word, Acrobat and Google Docs PDFs as fixtures (needs files; Word automation skipped).
 - Trailer `/ID` is kept: it can link a scrubbed copy to the original. Regenerate on scrub?
