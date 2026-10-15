@@ -61,6 +61,10 @@ Bugs found and fixed:
 3 new engine tests (23 total), each failing before its fix. The Svelte fixes have no unit tests (no component
 test setup; adding one is a new dependency); they were checked in the browser before and after.
 
+Production 2026-10-15: `main` fast-forwarded b050720 → ed36795 and pushed; Vercel deployed in ~30 s. Live check
+(curl): all 7 pages 200, `/scrub/` 308s to `/scrub`, live asset hashes equal the local build of ed36795, every
+chunk 200, CSP `connect-src 'none'` served, header GitHub button carries `hidden sm:block`.
+
 ## Waiting on Mujahid
 
 - Recheck GSC Sitemaps after 2026-10-17: status should be "Success" with 7 discovered pages.
