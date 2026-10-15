@@ -33,10 +33,16 @@
   fixtures carry only made-up names, commit email already public on 5 other repos.
 - Header and footer "GitHub" links now point at the repo, not the profile, so "Open source" links to
   the source. README's link stays on the profile (it is under "Author").
+- Search Console: URL-prefix property `https://metascrub.vercel.app/` added and verified by HTML tag
+  (`Head.astro`; removing the tag unverifies). Same Google account as the mujahidabbas.dev property.
+  A Domain property isn't possible without DNS on a vercel.app subdomain.
+  `sitemap-index.xml` submitted; GSC showed "Couldn't fetch" with no "Last read" right after.
+  Both sitemaps return 200 `application/xml` to a Googlebot UA, valid XML, no X-Robots-Tag.
 
 ## Waiting on Mujahid
 
-- Resubmit the sitemap in Search Console (access for metascrub.vercel.app not confirmed).
+- Recheck GSC Sitemaps after 2026-10-17: status should be "Success" with 7 discovered pages.
+  Still "Couldn't fetch" with a "Last read" date means a real fetch failure to dig into.
 
 ## Follow-ups (not done, deliberately)
 
@@ -57,6 +63,6 @@
 - Batch runs on the main thread (R5); a Web Worker if large batches freeze the UI.
 - Encrypted PDFs rejected; `@cantoo/pdf-lib` (maintained fork, 2.11.1) reads them but is a new dependency.
   pdf-lib 1.17.1 last published 2022-05.
-- No analytics; Search Console access for metascrub.vercel.app not confirmed. Custom domain undecided.
+- No analytics. Custom domain undecided; moving to one means a new GSC property and 301s from vercel.app.
 - `astro check` needs `@astrojs/check` (not installed); Svelte files are not type-checked.
 - `npm approve-scripts` has `fsevents` pending (optional macOS watcher).
