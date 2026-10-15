@@ -65,7 +65,28 @@ Production 2026-10-15: `main` fast-forwarded b050720 → ed36795 and pushed; Ver
 (curl): all 7 pages 200, `/scrub/` 308s to `/scrub`, live asset hashes equal the local build of ed36795, every
 chunk 200, CSP `connect-src 'none'` served, header GitHub button carries `hidden sm:block`.
 
+## Done — design overhaul 2026-10-15 (branch `design-overhaul-2026-10`, not merged)
+
+Research and spec: Claude Doc "MetaScrub UI/UX Research and Design Overhaul"
+(https://claude.ai/code/artifact/cf650454-4523-4a1a-b5c1-2062ffe579d4): audit, 12 Mobbin searches, token spec,
+before/after screenshots. Decisions, all taken as recommended:
+- Live tool on the home page (home now hydrates the island; engine still loads at idle).
+- One workspace with a Scrub/Edit switch; `/scrub` and `/edit` stay as landing pages, files survive a switch.
+- A scrub runs on load, so Review lists everything a scrub removes (8 items for the PDFKit fixture, was 6), and
+  the Download hands out those bytes. A scrub failure there is non-fatal: Edit still works on the file.
+
+What changed: tokens (faint/muted lifted, text on red is near-black, new `on-redact` and `warn`); shared `.btn`
+and `.tag` classes; risk tags (Identifies you / Software / Timeline); Load-Review-Download rail; result state
+"Clean" with Download in lime; batch rows expand to per-file reports, "Download .zip again"; Edit shows a
+struck "was" value per changed field and "Save N changes"; native `<details>` FAQ (`Faq.astro`); blog reading
+time and an in-post tool card; header GitHub icon, nav fits at 320 px; four-column footer.
+Checked: 23 tests, build, typecheck; downloads read back with `pdfinfo`; 44 token pairs all >= 4.5:1 (lowest 4.68);
+no horizontal scroll at 320/360/390 px. No new dependencies; engine (`src/lib`) untouched.
+
 ## Waiting on Mujahid
+
+- Review the before/after in the doc above, then approve merging `design-overhaul-2026-10` into `main`
+  (a push to `main` deploys to production on Vercel).
 
 - Recheck GSC Sitemaps after 2026-10-17: status should be "Success" with 7 discovered pages.
   Still "Couldn't fetch" with a "Last read" date means a real fetch failure to dig into.
@@ -91,7 +112,11 @@ chunk 200, CSP `connect-src 'none'` served, header GitHub button carries `hidden
   pdf-lib 1.17.1 last published 2022-05.
 - No analytics. Custom domain undecided; moving to one means a new GSC property and 301s from vercel.app.
 - `astro check` needs `@astrojs/check` (not installed); Svelte files are not type-checked.
-- Header still overflows at 320 px (iPhone SE 1st gen) by ~28 px; 360 px and up fit. Tighter nav padding below `sm` would fix it.
 - No branded 404: Vercel serves its default page. An `src/pages/404.astro` would cover it.
 - No component tests for the Svelte island; UI behaviour is verified by hand in the browser.
 - `npm approve-scripts` has `fsevents` pending (optional macOS watcher).
+- An invalid PDF shows the raw parser error ("Cannot read properties of undefined (reading 'get')"), not the
+  friendly InvalidPdfError text. Pre-existing; the redesign shows it on load instead of on Scrub.
+- Created/Modified dates are not editable in Edit (engine supports them; no UI yet).
+- Real-phone check: the dropzone shows "Choose PDFs to check" on touch devices via `(pointer: coarse)`; the
+  headless pass emulates width, not pointer type, so this copy was not seen rendered.

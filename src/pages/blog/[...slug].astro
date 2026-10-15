@@ -10,20 +10,26 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post);
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const minutes = Math.max(1, Math.round((post.body ?? '').split(/\s+/).filter(Boolean).length / 220));
 ---
 <BaseLayout title={`${post.data.title} | MetaScrub`} description={post.data.description} path={`/blog/${post.id}`}>
   <article class="mx-auto max-w-2xl px-5 pt-16 pb-10">
-    <a href="/blog" class="font-mono text-xs text-muted transition-colors hover:text-accent">← all posts</a>
+    <a href="/blog" class="text-sm text-muted transition-colors hover:text-fg">← All posts</a>
     <h1 class="mt-6 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{post.data.title}</h1>
-    <div class="mt-4 font-mono text-xs text-faint">{fmt(post.data.pubDate)}</div>
+    <div class="mt-4 font-mono text-xs text-faint">{fmt(post.data.pubDate)} · {minutes} min read</div>
+
+    <aside class="mt-8 flex flex-col gap-4 rounded-[14px] border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm text-muted"><span class="font-semibold text-fg">Check a PDF while you read.</span> See what it's hiding, right in your browser.</p>
+      <a href="/scrub" class="btn btn-secondary btn-sm shrink-0">Open the scrubber →</a>
+    </aside>
 
     <div class="prose mt-10">
       <Content />
     </div>
 
     <div class="mt-14 flex flex-wrap gap-3 border-t border-border pt-8">
-      <a href="/scrub" class="rounded-md bg-redact px-5 py-3 font-mono text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">▮ Scrub a PDF</a>
-      <a href="/edit" class="rounded-md border border-border-bright bg-surface px-5 py-3 font-mono text-sm font-semibold text-fg transition-colors hover:border-accent hover:text-accent">Edit metadata →</a>
+      <a href="/scrub" class="btn btn-redact btn-lg">Scrub a PDF</a>
+      <a href="/edit" class="btn btn-secondary btn-lg">Edit metadata</a>
     </div>
   </article>
 </BaseLayout>

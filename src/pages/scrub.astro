@@ -1,58 +1,35 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PdfTool from '../components/PdfTool.svelte';
+import Faq from '../components/Faq.astro';
 
 const faqs = [
   { q: 'Does my PDF get uploaded?', a: 'No. MetaScrub runs entirely in your browser. Your file is read into the tab, processed in memory, and the clean copy is handed straight back to you. The page’s Content-Security-Policy (connect-src \'none\') stops it from making any network request at all, which you can confirm in your browser’s developer tools.' },
   { q: 'What metadata gets removed?', a: 'The whole Info dictionary, including non-standard fields like Company; the XMP packet and any XMP attached to pages or images, including software fingerprints like “Microsoft Word”; app-private data; the author names and timestamps on comments; and old metadata from earlier saves that a reader no longer shows but the file still contains. The report lists everything removed.' },
   { q: 'Will the document content change?', a: 'No. Scrubbing only strips metadata. The visible pages, text, images, and comment text are untouched; only the hidden data about who, what and when is removed.' },
 ];
-
-const faqLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.q,
-    acceptedAnswer: { '@type': 'Answer', text: f.a },
-  })),
-};
 ---
 <BaseLayout
   title="Remove PDF metadata online — free & private | MetaScrub"
   description="Strip all hidden metadata from a PDF — author, software fingerprints, timestamps, XMP — directly in your browser. 100% client-side, nothing uploaded. Free and open source."
   path="/scrub"
 >
-  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} is:inline></script>
-  <section class="mx-auto max-w-3xl px-5 pt-16 pb-10">
-    <div class="font-mono text-xs uppercase tracking-wider text-redact">Scrub</div>
+  <section class="mx-auto max-w-4xl px-5 pt-14 pb-14 sm:pt-16">
+    <p class="font-mono text-xs uppercase tracking-wider text-redact">Scrub</p>
     <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Remove all metadata from a PDF</h1>
     <p class="mt-4 max-w-2xl text-lg text-muted">
       Drop a PDF to see what it's hiding, then wipe it clean with one click. Author names,
       software fingerprints, and timestamps — gone. Nothing is uploaded.
     </p>
 
-    <div class="mt-10">
+    <div class="mt-8">
       <PdfTool mode="scrub" client:load />
     </div>
   </section>
 
-  <section class="mx-auto max-w-3xl border-t border-border px-5 py-14">
-    <h2 class="text-xl font-semibold tracking-tight">Why strip PDF metadata?</h2>
-    <p class="mt-4 leading-relaxed text-muted">
-      Every PDF quietly records who made it, which software they used, and when. Before you send a
-      résumé, a legal filing, a whistleblower document, or a client deliverable, that hidden data
-      can reveal more than you intend — your full name, your employer's licensed software, even the
-      original template's owner. Scrubbing it removes that trail while leaving the document itself
-      perfectly intact.
-    </p>
-    <div class="mt-10 space-y-px overflow-hidden rounded-xl border border-border bg-border">
-      {faqs.map((f) => (
-        <div class="bg-surface p-6">
-          <h3 class="font-mono text-sm font-semibold text-fg">{f.q}</h3>
-          <p class="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
-        </div>
-      ))}
-    </div>
-  </section>
+  <Faq
+    heading="Why strip PDF metadata?"
+    intro="Every PDF quietly records who made it, which software they used, and when. Before you send a résumé, a legal filing, a whistleblower document, or a client deliverable, that hidden data can reveal more than you intend — your full name, your employer's licensed software, even the original template's owner. Scrubbing it removes that trail while leaving the document itself perfectly intact."
+    faqs={faqs}
+  />
 </BaseLayout>

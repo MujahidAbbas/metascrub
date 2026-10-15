@@ -29,11 +29,11 @@ Most "online PDF tool" sites upload your file to a server to process it — even
 ## How it works
 
 ```
-Static content site (zero JS)  ─┬─→  /  /edit  /scrub  /blog/*   →  fast, SEO-friendly
+Static Astro pages             ─┬─→  /  /edit  /scrub  /blog/*   →  fast, SEO-friendly
                                 └─→  one Svelte island (client:load)  →  all PDF work runs in-browser
 ```
 
-The marketing and blog pages ship no JavaScript. The tool itself is a single hydrated [Svelte](https://svelte.dev) island that calls a small, framework-agnostic engine built on [`pdf-lib`](https://pdf-lib.js.org).
+The blog pages ship no JavaScript. The tool is a single hydrated [Svelte](https://svelte.dev) island, on the home page and on `/scrub` and `/edit`, that calls a small, framework-agnostic engine built on [`pdf-lib`](https://pdf-lib.js.org). The engine loads when the page is idle, not during hydration.
 
 ### Engineering notes
 

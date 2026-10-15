@@ -41,20 +41,21 @@ const current = Astro.url.pathname;
     <script is:inline set:html={themeScript}></script>
   </head>
   <body class="min-h-screen antialiased">
-    <header class="sticky top-0 z-50 border-b border-border/80 bg-bg/80 backdrop-blur">
-      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-        <a href="/" class="group flex items-center gap-2.5 font-mono text-sm font-semibold tracking-tight">
-          <span class="grid h-6 w-6 place-items-center rounded-sm bg-accent text-bg">▮</span>
-          <span class="text-fg">meta<span class="text-accent">scrub</span></span>
+    <header class="sticky top-0 z-50 border-b border-border/80 bg-bg/85 backdrop-blur">
+      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:px-5">
+        <a href="/" class="flex shrink-0 items-center gap-2.5 font-mono text-sm font-semibold tracking-tight" aria-label="MetaScrub home">
+          <span class="grid h-6 w-6 place-items-center rounded-sm bg-accent text-bg" aria-hidden="true">▮</span>
+          <span class="text-fg max-[359px]:hidden">meta<span class="text-accent">scrub</span></span>
         </a>
-        <nav class="flex items-center gap-1 font-mono text-[13px]">
+        <nav class="flex items-center gap-0.5 text-sm font-medium" aria-label="Main">
           {nav.map((n) => (
             <a
               href={n.href}
+              aria-current={current === n.href ? 'page' : undefined}
               class:list={[
-                'rounded-md px-3 py-1.5 text-muted transition-colors hover:text-fg hover:bg-surface',
-                current === n.href && 'text-fg',
-                n.hideOnMobile && 'hidden sm:block',
+                'relative rounded-md px-2.5 py-1.5 transition-colors hover:bg-surface hover:text-fg max-[389px]:px-2 sm:px-3',
+                current === n.href ? 'text-fg after:absolute after:inset-x-2.5 after:-bottom-[11px] after:h-0.5 after:bg-accent sm:after:inset-x-3' : 'text-muted',
+                n.hideOnMobile && 'hidden md:block',
               ]}
             >{n.label}</a>
           ))}
@@ -62,13 +63,17 @@ const current = Astro.url.pathname;
             href="https://github.com/MujahidAbbas/metascrub"
             target="_blank"
             rel="noopener"
-            class="ml-2 hidden rounded-md border border-border px-3 py-1.5 text-muted transition-colors hover:border-border-bright hover:text-fg sm:block"
-          >GitHub ↗</a>
+            aria-label="MetaScrub on GitHub"
+            class="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border text-muted transition-colors hover:border-border-bright hover:text-fg sm:flex sm:w-auto sm:items-center sm:gap-1.5 sm:px-3"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            <span class="hidden text-sm sm:inline">GitHub</span>
+          </a>
           <button
             id="theme-toggle"
             type="button"
             aria-label="Toggle light and dark mode"
-            class="ml-1 grid h-8 w-8 place-items-center rounded-md border border-border text-muted transition-colors hover:border-border-bright hover:text-fg"
+            class="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border text-muted transition-colors hover:border-border-bright hover:text-fg"
           >
             <svg class="theme-icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />
@@ -87,20 +92,36 @@ const current = Astro.url.pathname;
     </main>
 
     <footer class="mt-24 border-t border-border">
-      <div class="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between">
-        <div class="space-y-1">
+      <div class="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div class="space-y-2">
           <div class="font-mono text-sm font-semibold">meta<span class="text-accent">scrub</span></div>
-          <p class="max-w-sm text-sm text-muted">
-            Your files never leave your device. Every PDF is processed locally in your browser —
+          <p class="max-w-xs text-sm leading-relaxed text-muted">
+            Your files never leave your device. Every PDF is processed locally in your browser;
             there is no server to upload to.
           </p>
         </div>
-        <div class="flex flex-col gap-2 font-mono text-[13px] text-muted sm:items-end">
-          <span class="text-faint">built by <a href="https://mujahidabbas.dev/" target="_blank" rel="noopener" class="text-fg hover:text-accent">Mujahid Abbas</a></span>
-          <div class="flex gap-4">
-            <a href="https://ko-fi.com/mujahiddev" target="_blank" rel="noopener" class="hover:text-accent">Buy me a coffee ☕</a>
-            <a href="https://github.com/MujahidAbbas/metascrub" target="_blank" rel="noopener" class="hover:text-accent">GitHub</a>
-          </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-faint">Tool</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a href="/scrub" class="text-muted hover:text-fg">Scrub a PDF</a></li>
+            <li><a href="/edit" class="text-muted hover:text-fg">Edit metadata</a></li>
+            <li><a href="/#how" class="text-muted hover:text-fg">How it works</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-faint">Learn</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a href="/blog" class="text-muted hover:text-fg">Blog</a></li>
+            <li><a href="/#privacy" class="text-muted hover:text-fg">Why it’s private</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-faint">Project</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a href="https://github.com/MujahidAbbas/metascrub" target="_blank" rel="noopener" class="text-muted hover:text-fg">Source on GitHub</a></li>
+            <li><a href="https://ko-fi.com/mujahiddev" target="_blank" rel="noopener" class="text-muted hover:text-fg">Buy me a coffee</a></li>
+            <li><a href="https://mujahidabbas.dev/" target="_blank" rel="noopener" class="text-muted hover:text-fg">Built by Mujahid Abbas</a></li>
+          </ul>
         </div>
       </div>
     </footer>

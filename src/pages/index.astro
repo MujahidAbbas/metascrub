@@ -1,143 +1,151 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PdfTool from '../components/PdfTool.svelte';
 
 const hidden = [
-  { k: 'Author', v: 'j.doe@company.com', note: 'Your real name & email' },
-  { k: 'Producer', v: 'Microsoft® Word 2021', note: 'The exact software you used' },
-  { k: 'Created', v: '2024-01-15 09:42:11', note: 'When you really wrote it' },
-  { k: 'Company', v: 'Acme Holdings Inc.', note: 'Org baked into the template' },
+  { k: 'Author', v: 'j.doe@company.com', note: 'Your real name and email', tag: ['Identifies you', 'tag tag-identity'] },
+  { k: 'Company', v: 'Acme Holdings Inc.', note: 'The org baked into the template', tag: ['Identifies you', 'tag tag-identity'] },
+  { k: 'Producer', v: 'Microsoft® Word 2021', note: 'The exact software you used', tag: ['Software', 'tag tag-software'] },
+  { k: 'Created', v: '2024-01-15 09:42:11', note: 'When you really wrote it', tag: ['Timeline', 'tag'] },
 ];
 
 const steps = [
-  { n: '01', t: 'Drop a PDF', d: 'Drag a file in — or several. It loads straight into your browser tab.' },
-  { n: '02', t: 'Inspect', d: 'See every Info-dictionary and XMP field hiding inside, laid bare.' },
-  { n: '03', t: 'Edit or scrub', d: 'Rewrite fields, or wipe the lot with one click. Watch what gets removed.' },
-  { n: '04', t: 'Download', d: 'Save the clean copy. Nothing was ever uploaded anywhere.' },
+  { n: '01', t: 'Load', d: 'Drop one PDF or a whole batch. Each file is read inside this browser tab.' },
+  { n: '02', t: 'Review', d: 'See every field it carries, tagged by what it gives away: you, your software, your timeline.' },
+  { n: '03', t: 'Download', d: 'Scrub it all or edit single fields, then save the clean copy. The original stays as it was.' },
+];
+
+const proofs = [
+  {
+    t: 'No server',
+    d: 'The site is static files with self-hosted fonts and no analytics. There is no backend to receive a PDF.',
+    check: 'No account, no cookies, no tracking.',
+    icon: 'M4 6h16v5H4zM4 13h16v5H4zM8 8.5h.01M8 15.5h.01M3 3l18 18',
+  },
+  {
+    t: 'Network blocked',
+    d: 'The page’s Content-Security-Policy sets connect-src \'none\', so the browser refuses any request it tries to send.',
+    check: 'Open DevTools → Network while you scrub.',
+    icon: 'M12 3 5 6v5c0 4.5 3 8.5 7 10 4-1.5 7-5.5 7-10V6zM9 12l2 2 4-4',
+  },
+  {
+    t: 'Works offline',
+    d: 'Once the page has loaded, disconnect. Reading, scrubbing and editing all keep working.',
+    check: 'Turn on airplane mode and try it.',
+    icon: 'M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01M3 3l18 18',
+  },
+  {
+    t: 'Open source',
+    d: 'The engine and this site are public under the MIT license, tests included.',
+    check: 'Read the code on GitHub.',
+    href: 'https://github.com/MujahidAbbas/metascrub',
+    icon: 'm8 6-6 6 6 6M16 6l6 6-6 6M14 4l-4 16',
+  },
 ];
 ---
 <BaseLayout path="/">
-  <!-- HERO -->
+  <!-- HERO: the tool itself -->
   <section class="relative overflow-hidden">
     <div class="pointer-events-none absolute inset-0 bg-grid"></div>
     <div class="pointer-events-none absolute -top-40 left-1/2 h-80 w-[42rem] -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]"></div>
 
-    <div class="mx-auto grid max-w-6xl gap-14 px-5 pt-20 pb-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pt-28">
-      <div>
-        <div class="rise inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 font-mono text-xs text-muted" style="animation-delay:.05s">
+    <div class="relative mx-auto max-w-4xl px-5 pt-12 pb-16 sm:pt-20">
+      <div class="text-center">
+        <div class="rise inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-xs font-medium text-muted" style="animation-delay:.05s">
           <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
-          100% client-side · no uploads · no tracking
+          Runs in your browser · nothing uploaded · open source
         </div>
-
-        <h1 class="rise mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl" style="animation-delay:.12s">
-          Strip the secrets<br />out of your
-          <span class="relative whitespace-nowrap text-accent">PDFs<span class="absolute -bottom-1 left-0 h-px w-full bg-accent/40"></span></span>.
+        <h1 class="rise mx-auto mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl" style="animation-delay:.12s">
+          Strip the secrets <br class="hidden sm:inline" />out of your <span class="text-accent">PDFs</span>.
         </h1>
-
-        <p class="rise mt-6 max-w-md text-lg leading-relaxed text-muted" style="animation-delay:.2s">
-          Every PDF carries hidden metadata — your name, your software, your timestamps.
-          <span class="text-fg">MetaScrub</span> edits or erases it entirely, right in your browser.
-          The file never touches a server.
+        <p class="rise mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted" style="animation-delay:.2s">
+          Every PDF carries hidden metadata: your name, your software, your timestamps.
+          MetaScrub shows it, edits it or erases it, and the file never leaves your device.
         </p>
-
-        <div class="rise mt-8 flex flex-wrap items-center gap-3" style="animation-delay:.28s">
-          <a href="/scrub" class="group inline-flex items-center gap-2 rounded-md bg-redact px-5 py-3 font-mono text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
-            ▮ Scrub a PDF
-          </a>
-          <a href="/edit" class="inline-flex items-center gap-2 rounded-md border border-border-bright bg-surface px-5 py-3 font-mono text-sm font-semibold text-fg transition-colors hover:border-accent hover:text-accent">
-            Edit metadata →
-          </a>
-        </div>
-
-        <div class="rise mt-7 flex items-center gap-5 font-mono text-xs text-faint" style="animation-delay:.36s">
-          <span>Info dict</span><span class="text-border-bright">/</span>
-          <span>XMP packets</span><span class="text-border-bright">/</span>
-          <span>Batch</span><span class="text-border-bright">/</span>
-          <span>Open source</span>
-        </div>
       </div>
 
-      <!-- Inspector card: the signature redaction motif -->
-      <div class="rise" style="animation-delay:.24s">
-        <div class="overflow-hidden rounded-xl border border-border bg-surface shadow-2xl shadow-black/40">
-          <div class="flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2.5">
-            <span class="h-2.5 w-2.5 rounded-full bg-redact/80"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-accent/40"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-border-bright"></span>
-            <span class="ml-2 font-mono text-xs text-muted">resume_final.pdf — properties</span>
-          </div>
-          <div class="space-y-px bg-border/60 font-mono text-sm">
-            {hidden.map((row, i) => (
-              <div class="flex items-center justify-between gap-4 bg-surface px-4 py-3">
-                <span class="text-faint">{row.k}</span>
-                <span class="redact text-muted" style={`animation-delay:${0.9 + i * 0.18}s`}>{row.v}</span>
-              </div>
-            ))}
-          </div>
-          <div class="flex items-center justify-between border-t border-border bg-surface-2 px-4 py-3 font-mono text-xs">
-            <span class="text-muted caret">metadata wiped</span>
-            <span class="text-accent">4 fields removed</span>
-          </div>
-        </div>
+      <div class="rise mt-10" style="animation-delay:.28s">
+        <PdfTool mode="scrub" demo client:load />
       </div>
     </div>
   </section>
 
   <!-- WHAT'S HIDING -->
   <section class="mx-auto max-w-6xl px-5 py-16">
-    <div class="flex items-end justify-between gap-6 border-b border-border pb-5">
+    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-border pb-5">
       <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">What's hiding in your PDF</h2>
-      <span class="hidden font-mono text-xs text-faint sm:block">most people never check</span>
+      <p class="text-sm text-muted">Typical values from an office PDF. Most people never check.</p>
     </div>
-    <div class="mt-8 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mt-8 grid gap-px overflow-hidden rounded-[14px] border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
       {hidden.map((row) => (
-        <div class="group bg-surface p-6 transition-colors hover:bg-surface-2">
-          <div class="font-mono text-xs uppercase tracking-wider text-accent">{row.k}</div>
-          <div class="mt-3 font-mono text-sm text-fg">{row.v}</div>
+        <div class="bg-surface p-6">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-mono text-sm text-muted">{row.k}</span>
+            <span class={row.tag[1]}>{row.tag[0]}</span>
+          </div>
+          <div class="mt-4 font-mono text-sm text-fg">{row.v}</div>
           <p class="mt-2 text-sm text-muted">{row.note}</p>
         </div>
       ))}
     </div>
+    <p class="mt-5 text-sm text-muted">
+      Plus comment authors and timestamps, XMP on pages and images, app-private data, and values left over from earlier saves.
+    </p>
   </section>
 
   <!-- HOW IT WORKS -->
   <section id="how" class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
     <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">How it works</h2>
-    <p class="mt-2 max-w-lg text-muted">Four steps, zero accounts, nothing leaves your machine.</p>
-    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <p class="mt-2 max-w-lg text-muted">Three steps, no account, nothing leaves your machine.</p>
+    <ol class="mt-10 grid gap-6 md:grid-cols-3">
       {steps.map((s) => (
-        <div class="relative rounded-xl border border-border bg-surface p-6">
-          <div class="font-mono text-3xl font-semibold text-border-bright">{s.n}</div>
-          <h3 class="mt-4 font-semibold text-fg">{s.t}</h3>
+        <li class="rounded-[14px] border border-border bg-surface p-6">
+          <div class="font-mono text-sm font-semibold text-accent">{s.n}</div>
+          <h3 class="mt-3 text-lg font-semibold text-fg">{s.t}</h3>
           <p class="mt-2 text-sm leading-relaxed text-muted">{s.d}</p>
-        </div>
+        </li>
       ))}
-    </div>
+    </ol>
   </section>
 
   <!-- PRIVACY -->
-  <section class="mx-auto max-w-6xl px-5 py-16">
-    <div class="relative overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-12">
+  <section id="privacy" class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
+    <div class="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 sm:p-12">
       <div class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-[100px]"></div>
       <div class="relative max-w-2xl">
-        <div class="font-mono text-xs uppercase tracking-wider text-accent">The whole point</div>
-        <h2 class="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
-          There is no server. So there's nothing to leak.
-        </h2>
+        <p class="font-mono text-xs uppercase tracking-wider text-accent">The whole point</p>
+        <h2 class="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">There is no server. So there's nothing to leak.</h2>
         <p class="mt-4 leading-relaxed text-muted">
-          Online PDF tools upload your document to their servers to process it — even the
-          private ones. MetaScrub doesn't. The entire engine runs in your browser tab, so your
-          confidential PDF stays on your device from the moment you drop it to the moment you
-          download the clean copy. Even the fonts are self-hosted: this page makes
-          <span class="text-fg">zero third-party network calls</span>.
+          Online PDF tools upload your document to their servers to process it, even the private ones.
+          MetaScrub runs the whole engine in your browser tab, from the moment you drop a file to the
+          moment you save the clean copy. You don't have to take that on trust:
         </p>
-        <div class="mt-8 flex flex-wrap gap-3">
-          <a href="/scrub" class="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-3 font-mono text-sm font-semibold text-bg transition-transform hover:-translate-y-0.5">
-            Try it — drop a PDF →
-          </a>
-          <span class="inline-flex items-center gap-2 font-mono text-xs text-faint">
-            works offline · no signup
-          </span>
-        </div>
+      </div>
+      <ul class="relative mt-10 grid gap-px overflow-hidden rounded-[10px] border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+        {proofs.map((p) => (
+          <li class="flex flex-col bg-bg/60 p-5">
+            <svg class="text-accent" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={p.icon} /></svg>
+            <h3 class="mt-4 font-semibold text-fg">{p.t}</h3>
+            <p class="mt-2 flex-1 text-sm leading-relaxed text-muted">{p.d}</p>
+            {p.href
+              ? <a href={p.href} target="_blank" rel="noopener" class="mt-4 font-mono text-xs text-accent hover:underline">{p.check} ↗</a>
+              : <p class="mt-4 font-mono text-xs text-faint">{p.check}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <section class="mx-auto max-w-6xl px-5 pt-4">
+    <div class="flex flex-col items-start justify-between gap-6 border-t border-border pt-10 sm:flex-row sm:items-center">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight">Check a PDF before you send it.</h2>
+        <p class="mt-1 text-muted">Résumés, contracts, client deliverables. Nothing is uploaded.</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <a href="/scrub" class="btn btn-redact">Scrub a PDF</a>
+        <a href="/edit" class="btn btn-secondary">Edit metadata</a>
       </div>
     </div>
   </section>

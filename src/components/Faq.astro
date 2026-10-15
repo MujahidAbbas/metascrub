@@ -1,0 +1,35 @@
+---
+/** Explainer beside a native <details> FAQ, plus the FAQPage JSON-LD for the same questions. */
+interface Props {
+  heading: string;
+  intro: string;
+  faqs: { q: string; a: string }[];
+}
+const { heading, intro, faqs } = Astro.props;
+
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+---
+<script type="application/ld+json" set:html={JSON.stringify(faqLd)} is:inline></script>
+<section class="mx-auto grid max-w-4xl gap-10 border-t border-border px-5 py-16 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
+  <div>
+    <h2 class="text-2xl font-semibold tracking-tight">{heading}</h2>
+    <p class="mt-4 leading-relaxed text-muted">{intro}</p>
+    <a href="/blog" class="mt-5 inline-block text-sm font-medium text-accent hover:underline">Read the guides →</a>
+  </div>
+  <div class="faq">
+    {faqs.map((f) => (
+      <details>
+        <summary>{f.q}</summary>
+        <p>{f.a}</p>
+      </details>
+    ))}
+  </div>
+</section>

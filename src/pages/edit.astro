@@ -1,57 +1,35 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PdfTool from '../components/PdfTool.svelte';
+import Faq from '../components/Faq.astro';
 
 const faqs = [
   { q: 'Where are the changes saved?', a: 'Into a new copy of the PDF that downloads to your device. The original is never modified and never leaves your browser.' },
   { q: 'Does it edit XMP too?', a: 'Yes. MetaScrub writes both the classic Info dictionary and the embedded XMP packet, keeping them in sync so every PDF reader shows the same values.' },
   { q: 'Can I edit several PDFs at once?', a: 'Yes — drop multiple files and the fields you fill in are applied to all of them, then downloaded together as a zip. Blank fields are left untouched.' },
 ];
-
-const faqLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.q,
-    acceptedAnswer: { '@type': 'Answer', text: f.a },
-  })),
-};
 ---
 <BaseLayout
   title="Edit PDF metadata online — free & private | MetaScrub"
   description="Edit the Title, Author, Subject, Keywords, Creator and XMP metadata of any PDF, right in your browser. 100% client-side, nothing uploaded. Free and open source."
   path="/edit"
 >
-  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} is:inline></script>
-  <section class="mx-auto max-w-3xl px-5 pt-16 pb-10">
-    <div class="font-mono text-xs uppercase tracking-wider text-accent">Edit</div>
+  <section class="mx-auto max-w-4xl px-5 pt-14 pb-14 sm:pt-16">
+    <p class="font-mono text-xs uppercase tracking-wider text-accent">Edit</p>
     <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Edit PDF metadata</h1>
     <p class="mt-4 max-w-2xl text-lg text-muted">
       Drop a PDF, change any field — Title, Author, Subject, Keywords — and download the updated
       copy. Both the Info dictionary and XMP are written, in your browser.
     </p>
 
-    <div class="mt-10">
+    <div class="mt-8">
       <PdfTool mode="edit" client:load />
     </div>
   </section>
 
-  <section class="mx-auto max-w-3xl border-t border-border px-5 py-14">
-    <h2 class="text-xl font-semibold tracking-tight">When you'd want to edit PDF metadata</h2>
-    <p class="mt-4 leading-relaxed text-muted">
-      Correct a misspelled author, set a proper Title so the document shows up correctly in
-      libraries and search, add Keywords for findability, or fix the Producer left behind by a
-      conversion tool. Good metadata makes PDFs easier to organize, cite, and index — and unlike
-      most online tools, MetaScrub does it without ever uploading your file.
-    </p>
-    <div class="mt-10 space-y-px overflow-hidden rounded-xl border border-border bg-border">
-      {faqs.map((f) => (
-        <div class="bg-surface p-6">
-          <h3 class="font-mono text-sm font-semibold text-fg">{f.q}</h3>
-          <p class="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
-        </div>
-      ))}
-    </div>
-  </section>
+  <Faq
+    heading="When you'd want to edit PDF metadata"
+    intro="Correct a misspelled author, set a proper Title so the document shows up correctly in libraries and search, add Keywords for findability, or fix the Producer left behind by a conversion tool. Good metadata makes PDFs easier to organize, cite, and index — and unlike most online tools, MetaScrub does it without ever uploading your file."
+    faqs={faqs}
+  />
 </BaseLayout>
