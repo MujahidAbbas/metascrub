@@ -21,9 +21,11 @@
 ## Waiting on Mujahid
 
 - Make `MujahidAbbas/metascrub` public. Until then the site's "Open source" claim is false.
-- Merge/push `upgrade-2026-10`. Vercel's GitHub app deploys `main` straight to Production (both
-  June commits show `vercel[bot]` Production deployments). Push the branch first: should get a preview URL (preview settings not checked).
-- On the deployed site: confirm the CSP meta tag is served and the tool works (only checked on `astro preview`).
+- Merge `upgrade-2026-10` into `main`. Vercel's GitHub app deploys `main` straight to Production
+  (both June commits show `vercel[bot]` Production deployments).
+  The branch preview (behind Vercel login) was checked 2026-10-15: CSP meta served, same-origin
+  fetch blocked, page hydrates, scrub of the PDFKit fixture reports the same 8 removals as locally.
+- After the merge: make the repo public, then re-check the live site.
 
 ## Follow-ups (not done, deliberately)
 
