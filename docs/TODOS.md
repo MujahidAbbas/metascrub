@@ -26,6 +26,8 @@
   (both June commits show `vercel[bot]` Production deployments).
   The branch preview (behind Vercel login) was checked 2026-10-15: CSP meta served, same-origin
   fetch blocked, page hydrates, scrub of the PDFKit fixture reports the same 8 removals as locally.
+  Rechecked at 77af2db: `/scrub/` and `/edit/` land on the slash-less URL (1 redirect, then 200),
+  island hydrates, engine chunk fetched, same-origin fetch still blocked.
 - After the merge: make the repo public, then re-check the live site: `/scrub/` 308s to `/scrub`,
   `sitemap-0.xml` has no trailing slashes, CSP meta present. Resubmit the sitemap in Search Console.
 
