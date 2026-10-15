@@ -15,21 +15,36 @@ export interface Metadata {
   modificationDate?: Date;
 }
 
+/** A non-standard Info-dict entry, e.g. Company or SourceModified from Office/Acrobat. */
+export interface InfoEntry {
+  key: string;
+  value: string;
+}
+
 /** What read() surfaces: the merged view plus where each source had data. */
 export interface ReadResult {
   /** Merged best-effort view for the form (XMP wins where both exist). */
   metadata: Metadata;
   /** Raw Info-dict view, for diffing/scrub reporting. */
   info: Metadata;
+  /** Info-dict keys beyond the standard eight. */
+  infoExtra: InfoEntry[];
   /** Parsed XMP view (empty object if no XMP packet present). */
   xmp: Metadata;
   hasXmp: boolean;
 }
 
+/**
+ * Where a removed value lived: the Info dict, the document XMP packet, a
+ * comment, data left over from an earlier save, or XMP/app data embedded on
+ * pages, images and fonts.
+ */
+export type RemovalSource = 'info' | 'xmp' | 'comment' | 'revision' | 'embedded';
+
 /** One field removed by a scrub, with the value that was there. */
 export interface ScrubRemoval {
   field: string;
-  source: 'info' | 'xmp';
+  source: RemovalSource;
   value: string;
 }
 

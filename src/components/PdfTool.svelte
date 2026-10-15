@@ -1,12 +1,24 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Dropzone from './Dropzone.svelte';
   import MetadataForm from './MetadataForm.svelte';
   import ScrubReport from './ScrubReport.svelte';
   import type { Metadata, ReadResult, ScrubRemoval } from '../lib/types';
-  import { readMetadata, writeMetadata } from '../lib/pdf-meta';
-  import { scrub } from '../lib/scrub';
-  import { batchEdit, batchScrub } from '../lib/batch';
   import { downloadPdf, downloadZipped, suggestName } from '../lib/download';
+
+  // The PDF engine (pdf-lib, ~190 KB gzipped) loads once the page is idle
+  // rather than during hydration. It is still fetched right after load, so the
+  // tool keeps working if the connection drops before a file is dropped.
+  let enginePromise: ReturnType<typeof loadEngine> | undefined;
+  function loadEngine() {
+    return Promise.all([import('../lib/pdf-meta'), import('../lib/scrub'), import('../lib/batch')])
+      .then(([meta, s, batch]) => ({ ...meta, ...s, ...batch }));
+  }
+  const engine = () => (enginePromise ??= loadEngine());
+  onMount(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 200));
+    idle(() => engine());
+  });
 
   interface Props {
     mode: 'edit' | 'scrub';
@@ -46,7 +58,7 @@
       entries = [...entries, { id, name: file.name, bytes: new Uint8Array(), status: 'reading' }];
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const meta = await readMetadata(bytes);
+        const meta = await (await engine()).readMetadata(bytes);
         patch(id, { bytes, meta, status: 'ready' });
         if (mode === 'edit' && !prefilled) {
           prefilled = true;
@@ -84,7 +96,9 @@
     return out;
   }
 
-  function displayRows(m: Metadata): [string, string][] {
+  function displayRows(r: ReadResult | undefined): [string, string][] {
+    if (!r) return [];
+    const m = r.metadata;
     const rows: [string, string][] = [];
     const add = (label: string, v: unknown) => {
       if (v == null) return;
@@ -94,6 +108,7 @@
     add('Title', m.title); add('Author', m.author); add('Subject', m.subject);
     add('Keywords', m.keywords); add('Creator', m.creator); add('Producer', m.producer);
     add('Creator tool', m.creatorTool); add('Created', m.creationDate); add('Modified', m.modificationDate);
+    for (const e of r.infoExtra) add(e.key, e.value);
     return rows;
   }
 
@@ -102,7 +117,7 @@
     if (!single) return;
     busy = true;
     try {
-      const out = await writeMetadata(single.bytes, editForm);
+      const out = await (await engine()).writeMetadata(single.bytes, editForm);
       downloadPdf(suggestName(single.name, 'edited'), out);
       patch(single.id, { status: 'done', outBytes: out });
     } catch (e) {
@@ -112,24 +127,26 @@
     }
   }
 
+  // Batch results come back in input order; match by position, not filename,
+  // since two files from different folders can share a name.
   async function runEditAll() {
     busy = true;
-    const meta = cleanMeta(editForm);
-    const results = await batchEdit(ready.map((e) => ({ name: e.name, bytes: e.bytes })), meta);
-    const ok = results.filter((r) => r.ok && r.bytes).map((r) => ({ name: suggestName(r.name, 'edited'), bytes: r.bytes! }));
-    if (ok.length) await downloadZipped(ok, 'metascrub-edited.zip');
-    for (const r of results) {
-      const ent = entries.find((e) => e.name === r.name);
-      if (ent) patch(ent.id, r.ok ? { status: 'done' } : { status: 'error', error: r.error });
+    try {
+      const targets = ready;
+      const results = await (await engine()).batchEdit(targets.map((e) => ({ name: e.name, bytes: e.bytes })), cleanMeta(editForm));
+      results.forEach((r, i) => patch(targets[i]!.id, r.ok ? { status: 'done' } : { status: 'error', error: r.error }));
+      const ok = results.filter((r) => r.ok && r.bytes).map((r) => ({ name: suggestName(r.name, 'edited'), bytes: r.bytes! }));
+      if (ok.length) await downloadZipped(ok, 'metascrub-edited.zip');
+    } finally {
+      busy = false;
     }
-    busy = false;
   }
 
   async function runScrubSingle() {
     if (!single) return;
     busy = true;
     try {
-      const { bytes, removed } = await scrub(single.bytes);
+      const { bytes, removed } = await (await engine()).scrub(single.bytes);
       patch(single.id, { status: 'done', removed, outBytes: bytes });
     } catch (e) {
       patch(single.id, { status: 'error', error: (e as Error).message });
@@ -140,14 +157,15 @@
 
   async function runScrubAll() {
     busy = true;
-    const results = await batchScrub(ready.map((e) => ({ name: e.name, bytes: e.bytes })));
-    const ok = results.filter((r) => r.ok && r.bytes).map((r) => ({ name: suggestName(r.name, 'scrubbed'), bytes: r.bytes! }));
-    if (ok.length) await downloadZipped(ok, 'metascrub-scrubbed.zip');
-    for (const r of results) {
-      const ent = entries.find((e) => e.name === r.name);
-      if (ent) patch(ent.id, r.ok ? { status: 'done', removed: r.removed, outBytes: r.bytes } : { status: 'error', error: r.error });
+    try {
+      const targets = ready;
+      const results = await (await engine()).batchScrub(targets.map((e) => ({ name: e.name, bytes: e.bytes })));
+      results.forEach((r, i) => patch(targets[i]!.id, r.ok ? { status: 'done', removed: r.removed, outBytes: r.bytes } : { status: 'error', error: r.error }));
+      const ok = results.filter((r) => r.ok && r.bytes).map((r) => ({ name: suggestName(r.name, 'scrubbed'), bytes: r.bytes! }));
+      if (ok.length) await downloadZipped(ok, 'metascrub-scrubbed.zip');
+    } finally {
+      busy = false;
     }
-    busy = false;
   }
 
   const accent = isScrub ? 'redact' : 'accent';
@@ -190,7 +208,7 @@
               {#if e.status === 'reading'}<span class="text-muted">reading…</span>
               {:else if e.status === 'error'}<span class="text-redact" title={e.error}>error</span>
               {:else if e.status === 'done'}<span class="text-accent">{isScrub ? `−${e.removed?.length ?? 0}` : 'done'}</span>
-              {:else}<span class="text-muted">{e.meta ? displayRows(e.meta.metadata).length : 0} fields</span>{/if}
+              {:else}<span class="text-muted">{displayRows(e.meta).length} fields</span>{/if}
               <button onclick={() => remove(e.id)} class="text-faint hover:text-redact">✕</button>
             </span>
           </li>
@@ -233,12 +251,12 @@
         <div class="rounded-xl border border-border bg-surface p-6">
           <h3 class="font-mono text-sm font-semibold">Found in <span class="text-fg">{single.name}</span></h3>
           <div class="mt-4 space-y-px overflow-hidden rounded-lg border border-border bg-border font-mono text-sm">
-            {#each displayRows(single.meta?.metadata ?? {}) as [k, v] (k)}
+            {#each displayRows(single.meta) as [k, v] (k)}
               <div class="flex items-center justify-between gap-4 bg-surface px-4 py-2.5">
                 <span class="text-faint">{k}</span><span class="truncate text-muted">{v}</span>
               </div>
             {:else}
-              <div class="bg-surface px-4 py-2.5 text-muted">No metadata found — already clean.</div>
+              <div class="bg-surface px-4 py-2.5 text-muted">No document properties found.</div>
             {/each}
           </div>
           <button onclick={runScrubSingle} disabled={busy}

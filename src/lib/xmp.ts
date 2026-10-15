@@ -2,7 +2,7 @@
  * XMP packet read/write. pdf-lib has no first-class XMP API, so we operate on
  * the catalog's /Metadata stream directly (proven in the Phase 0 spike).
  */
-import { PDFDocument, PDFName, decodePDFRawStream, type PDFRef } from 'pdf-lib';
+import { PDFDocument, PDFName, decodePDFRawStream, type PDFObject, type PDFRef } from 'pdf-lib';
 import type { Metadata } from './types';
 
 const XMP_NS = {
@@ -11,6 +11,18 @@ const XMP_NS = {
   pdf: 'http://ns.adobe.com/pdf/1.3/',
 } as const;
 
+const CONFORMANCE_NS = {
+  pdfaid: 'http://www.aiim.org/pdfa/ns/id/',
+  pdfuaid: 'http://www.aiim.org/pdfua/ns/id/',
+} as const;
+
+/** A PDF/A or PDF/UA identification property, e.g. pdfaid:part = 2. */
+export interface ConformanceProp {
+  prefix: keyof typeof CONFORMANCE_NS;
+  name: string;
+  value: string;
+}
+
 function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -18,8 +30,14 @@ function esc(s: string): string {
     .replace(/>/g, '&gt;');
 }
 
-/** Build a full XMP packet from metadata fields. Omits empty fields. */
-export function buildXmp(m: Metadata): string {
+const validDate = (d: Date | undefined): d is Date => !!d && !isNaN(d.getTime());
+
+/**
+ * Build a full XMP packet from metadata fields. Omits empty fields. `keep`
+ * carries PDF/A / PDF/UA identification over from the packet being replaced,
+ * so an edited file still declares its conformance.
+ */
+export function buildXmp(m: Metadata, keep: ConformanceProp[] = []): string {
   const lines: string[] = [];
   if (m.title) {
     lines.push(`      <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${esc(m.title)}</rdf:li></rdf:Alt></dc:title>`);
@@ -40,6 +58,23 @@ export function buildXmp(m: Metadata): string {
   if (m.producer) {
     lines.push(`      <pdf:Producer>${esc(m.producer)}</pdf:Producer>`);
   }
+  // XMP counterparts of the Info dict's Keywords and dates (ISO 32000-1 §14.3.2).
+  // pdf-lib writes Info Keywords space-joined, so mirror that exactly.
+  if (m.keywords && m.keywords.length) {
+    lines.push(`      <pdf:Keywords>${esc(m.keywords.join(' '))}</pdf:Keywords>`);
+  }
+  if (validDate(m.creationDate)) {
+    lines.push(`      <xmp:CreateDate>${m.creationDate.toISOString()}</xmp:CreateDate>`);
+  }
+  if (validDate(m.modificationDate)) {
+    lines.push(`      <xmp:ModifyDate>${m.modificationDate.toISOString()}</xmp:ModifyDate>`);
+  }
+  for (const p of keep) {
+    lines.push(`      <${p.prefix}:${p.name}>${esc(p.value)}</${p.prefix}:${p.name}>`);
+  }
+  const extraNs = [...new Set(keep.map((p) => p.prefix))]
+    .map((prefix) => `\n        xmlns:${prefix}="${CONFORMANCE_NS[prefix]}"`)
+    .join('');
 
   return `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -47,7 +82,7 @@ export function buildXmp(m: Metadata): string {
     <rdf:Description rdf:about=""
         xmlns:dc="${XMP_NS.dc}"
         xmlns:xmp="${XMP_NS.xmp}"
-        xmlns:pdf="${XMP_NS.pdf}">
+        xmlns:pdf="${XMP_NS.pdf}"${extraNs}>
 ${lines.join('\n')}
     </rdf:Description>
   </rdf:RDF>
@@ -55,11 +90,8 @@ ${lines.join('\n')}
 <?xpacket end="w"?>`;
 }
 
-/** Read the raw XMP XML string from a document, or null if absent. */
-export function getXmpString(doc: PDFDocument): string | null {
-  const ref = doc.catalog.get(PDFName.of('Metadata'));
-  if (!ref) return null;
-  const stream = doc.context.lookup(ref);
+/** A stream's decoded contents as UTF-8 text, or null if it can't be read. */
+export function streamText(stream: PDFObject | undefined): string | null {
   if (!stream) return null;
   const decoder = new TextDecoder('utf-8');
   try {
@@ -71,6 +103,13 @@ export function getXmpString(doc: PDFDocument): string | null {
       return null;
     }
   }
+}
+
+/** Read the raw XMP XML string from a document, or null if absent. */
+export function getXmpString(doc: PDFDocument): string | null {
+  const ref = doc.catalog.get(PDFName.of('Metadata'));
+  if (!ref) return null;
+  return streamText(doc.context.lookup(ref));
 }
 
 const firstMatch = (xml: string, re: RegExp): string | undefined => {
@@ -106,6 +145,19 @@ export function parseXmp(xml: string): Metadata {
   return out;
 }
 
+/** PDF/A and PDF/UA identification in a packet, in element or attribute form. */
+export function conformanceProps(xml: string): ConformanceProp[] {
+  const out = new Map<string, ConformanceProp>();
+  const re = /<(pdfaid|pdfuaid):(\w+)>([^<]*)<\/\1:\2>|\s(pdfaid|pdfuaid):(\w+)="([^"]*)"/g;
+  for (const m of xml.matchAll(re)) {
+    const prefix = (m[1] ?? m[4]) as ConformanceProp['prefix'];
+    const name = (m[2] ?? m[5])!;
+    const value = unesc((m[3] ?? m[6] ?? '').trim());
+    if (value) out.set(`${prefix}:${name}`, { prefix, name, value });
+  }
+  return [...out.values()];
+}
+
 /** Write/replace the XMP packet, deleting any orphaned prior stream (R2). */
 export function setXmp(doc: PDFDocument, xml: string): void {
   const oldRef = doc.catalog.get(PDFName.of('Metadata')) as PDFRef | undefined;
@@ -113,11 +165,4 @@ export function setXmp(doc: PDFDocument, xml: string): void {
   const stream = doc.context.stream(xml, { Type: 'Metadata', Subtype: 'XML' });
   const ref = doc.context.register(stream);
   doc.catalog.set(PDFName.of('Metadata'), ref);
-}
-
-/** Remove the XMP packet entirely, including the orphaned indirect object. */
-export function removeXmp(doc: PDFDocument): void {
-  const ref = doc.catalog.get(PDFName.of('Metadata')) as PDFRef | undefined;
-  doc.catalog.delete(PDFName.of('Metadata'));
-  if (ref) doc.context.delete(ref);
 }

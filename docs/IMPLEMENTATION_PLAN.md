@@ -180,10 +180,14 @@ Status key: ⬜ Not started · 🟡 In progress · ✅ Done · 🚫 Blocked
 | 5 | OG image + sitemap | ✅ | og.png (sharp), sitemap, robots.txt, FAQ JSON-LD on /scrub + /edit |
 | 5 | 3 launch blog posts | ✅ | Content collection + 3 SEO posts + blog index/post pages + prose theme |
 | 5+ | Dark/light theme toggle | ✅ | Header sun/moon toggle; CSS-var token swap; localStorage + system default; no-flash inline script; verified both modes |
-| 6 | Deploy to Cloudflare/Netlify | ⬜ | |
+| 6 | Deploy | ✅ | Vercel, https://metascrub.vercel.app (no custom domain yet) |
 | 6 | GitHub README + diagram | ✅ | README.md w/ architecture diagram, engineering notes, .gitignore added |
 | 6 | LinkedIn launch post | ⬜ | |
 | 6 | Directory submissions | ⬜ | |
+
+---
+
+Upgrade 2026-10 (Astro 7, scrub coverage, CSP) and its follow-ups: see [TODOS.md](TODOS.md).
 
 ---
 
@@ -191,5 +195,5 @@ Status key: ⬜ Not started · 🟡 In progress · ✅ Done · 🚫 Blocked
 
 - [ ] Final name (provisional: MetaScrub)
 - [ ] Domain (deferred)
-- [ ] Host: Cloudflare Pages vs Netlify (lean Cloudflare)
+- [x] Host: Vercel
 - [ ] Analytics: Plausible (paid) vs Cloudflare Web Analytics (free)

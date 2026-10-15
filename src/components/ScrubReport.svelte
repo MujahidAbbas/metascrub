@@ -1,10 +1,17 @@
 <script lang="ts">
-  import type { ScrubRemoval } from '../lib/types';
+  import type { RemovalSource, ScrubRemoval } from '../lib/types';
 
   interface Props {
     removed: ScrubRemoval[];
   }
   let { removed }: Props = $props();
+
+  const badge: Partial<Record<RemovalSource, string>> = {
+    xmp: 'xmp',
+    comment: 'comment',
+    revision: 'old save',
+    embedded: 'embedded',
+  };
 </script>
 
 {#if removed.length === 0}
@@ -16,7 +23,7 @@
         <span class="flex items-center gap-2.5">
           <span class="text-redact">▮</span>
           <span class="text-faint">{r.field}</span>
-          {#if r.source === 'xmp'}<span class="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase text-muted">xmp</span>{/if}
+          {#if badge[r.source]}<span class="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase text-muted">{badge[r.source]}</span>{/if}
         </span>
         <span class="truncate text-muted line-through decoration-redact/70">{r.value}</span>
       </div>

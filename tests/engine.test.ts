@@ -1,9 +1,16 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { readMetadata, writeMetadata } from '../src/lib/pdf-meta';
 import { scrub } from '../src/lib/scrub';
 import { batchEdit, batchScrub } from '../src/lib/batch';
-import { buildXmp, parseXmp } from '../src/lib/xmp';
-import { makePdfWithMeta, makeBarePdf, defaultMeta, asLatin1 } from './helpers';
+import { buildXmp, parseXmp, setXmp } from '../src/lib/xmp';
+import {
+  makePdfWithMeta, makeBarePdf, makeIncrementalPdf, makeClutteredPdf, defaultMeta, deepText,
+} from './helpers';
+
+/** Real-generator output: Chrome's Skia writer, and macOS PDFKit (Preview) with a sticky note. */
+const fixture = (name: string) => new Uint8Array(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
 
 describe('readMetadata', () => {
   it('reads Info dict fields', async () => {
@@ -29,6 +36,11 @@ describe('readMetadata', () => {
     expect(r.info.title).toBeUndefined();
     expect(r.metadata.author).toBeUndefined();
   });
+
+  it('surfaces non-standard Info keys', async () => {
+    const r = await readMetadata(await makeClutteredPdf());
+    expect(r.infoExtra).toContainEqual({ key: 'Company', value: 'Acme Holdings Inc.' });
+  });
 });
 
 describe('writeMetadata', () => {
@@ -41,8 +53,8 @@ describe('writeMetadata', () => {
     expect(r.info.title).toBe('Public Whitepaper');
     expect(r.info.author).toBe('Jane Smith');
     expect(r.xmp.author).toBe('Jane Smith');
-    // Old author must not survive anywhere in the bytes.
-    expect(asLatin1(edited)).not.toContain('John Doe');
+    // Old author must not survive anywhere in the file.
+    expect(await deepText(edited)).not.toContain('John Doe');
   });
 
   it('leaves untouched fields intact', async () => {
@@ -51,10 +63,38 @@ describe('writeMetadata', () => {
     expect(r.info.author).toBe('John Doe');
     expect(r.info.subject).toBe('Internal financials');
   });
+
+  it('keeps XMP CreatorTool in step with an edited Creator', async () => {
+    const edited = await writeMetadata(await makePdfWithMeta(), { creator: 'Neutral' });
+    const r = await readMetadata(edited);
+    expect(r.info.creator).toBe('Neutral');
+    expect(r.xmp.creatorTool).toBe('Neutral');
+    expect(await deepText(edited)).not.toContain('Acme Template');
+  });
+
+  it('keeps PDF/A identification and mirrors Keywords and dates into XMP', async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage();
+    doc.setKeywords(['alpha', 'beta']);
+    doc.setCreationDate(new Date('2024-01-15T09:30:00Z'));
+    setXmp(doc, buildXmp({ title: 'T' }).replace('<rdf:Description rdf:about=""',
+      '<rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" pdfaid:part="2" pdfaid:conformance="B"'));
+    const edited = await writeMetadata(await doc.save(), { title: 'New' });
+    const xml = await deepText(edited);
+    expect(xml).toContain('<pdfaid:part>2</pdfaid:part>');
+    expect(xml).toContain('<pdfaid:conformance>B</pdfaid:conformance>');
+    expect(xml).toContain('<pdf:Keywords>alpha beta</pdf:Keywords>');
+    expect(xml).toContain('<xmp:CreateDate>2024-01-15T09:30:00.000Z</xmp:CreateDate>');
+  });
+
+  it('drops an earlier save\'s Info dict', async () => {
+    const edited = await writeMetadata(await makeIncrementalPdf(), { title: 'X' });
+    expect(await deepText(edited)).not.toContain('John Doe');
+  });
 });
 
 describe('scrub', () => {
-  it('removes every field and leaves no fingerprint in raw bytes', async () => {
+  it('removes every field and leaves no fingerprint anywhere in the file', async () => {
     const { bytes, removed } = await scrub(await makePdfWithMeta());
     const r = await readMetadata(bytes);
     expect(r.info.title).toBeUndefined();
@@ -62,10 +102,11 @@ describe('scrub', () => {
     expect(r.info.producer).toBeUndefined();
     expect(r.hasXmp).toBe(false);
 
-    const raw = asLatin1(bytes);
-    expect(raw).not.toContain('John Doe');
-    expect(raw).not.toContain('Microsoft Word');
-    expect(raw).not.toContain('Acme Template');
+    const all = await deepText(bytes);
+    expect(all).not.toContain('John Doe');
+    expect(all).not.toContain('Microsoft Word');
+    expect(all).not.toContain('Acme Template');
+    expect(all).not.toContain('Confidential Q3');
 
     // Report should list what was there.
     const fields = removed.map((x) => x.field);
@@ -77,6 +118,56 @@ describe('scrub', () => {
   it('is a no-op-safe on a bare PDF', async () => {
     const { removed } = await scrub(await makeBarePdf());
     expect(removed).toEqual([]);
+  });
+
+  it('removes and reports non-standard Info keys', async () => {
+    const { bytes, removed } = await scrub(await makeClutteredPdf());
+    expect(await deepText(bytes)).not.toContain('Acme Holdings');
+    expect(removed).toContainEqual({ field: 'Company', source: 'info', value: 'Acme Holdings Inc.' });
+  });
+
+  it('removes an earlier save\'s Info dict and names what was in it', async () => {
+    const { bytes, removed } = await scrub(await makeIncrementalPdf());
+    expect(await deepText(bytes)).not.toContain('John Doe');
+    expect(removed).toContainEqual({ field: 'Author', source: 'info', value: 'Jane Public' });
+    expect(removed).toContainEqual({ field: 'Author', source: 'revision', value: 'John Doe' });
+  });
+
+  it('strips comment authors and timestamps but keeps form field names', async () => {
+    const { bytes, removed } = await scrub(await makeClutteredPdf());
+    const all = await deepText(bytes);
+    expect(all).not.toContain('Jane Reviewer');
+    expect(all).not.toContain('D:20240115093000Z');
+    expect(all).toContain('applicant_name');
+    expect(all).toContain('fix this'); // the comment itself is content, not metadata
+    expect(removed).toContainEqual({ field: 'Comment author', source: 'comment', value: 'Jane Reviewer' });
+  });
+
+  it('removes XMP and app-private data on pages', async () => {
+    const { bytes, removed } = await scrub(await makeClutteredPdf());
+    const all = await deepText(bytes);
+    expect(all).not.toContain('Page Owner');
+    expect(all).not.toContain('Illustrator 28.1');
+    const doc = await PDFDocument.load(bytes);
+    const page = doc.getPage(0).node as PDFDict;
+    expect(page.has(PDFName.of('Metadata'))).toBe(false);
+    expect(page.has(PDFName.of('PieceInfo'))).toBe(false);
+    expect(removed.map((r) => r.source)).toContain('embedded');
+  });
+
+  it('cleans a real Chrome-printed PDF', async () => {
+    const { bytes } = await scrub(fixture('chrome.pdf'));
+    const all = await deepText(bytes);
+    for (const s of ['HeadlessChrome', 'Skia/PDF', 'Fixture Quarterly Report']) expect(all).not.toContain(s);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
+  it('cleans a real PDF annotated with macOS PDFKit (Preview)', async () => {
+    const { bytes, removed } = await scrub(fixture('preview-annotated.pdf'));
+    const all = await deepText(bytes);
+    for (const s of ['Jane Fixture', 'Jane Reviewer', 'Quartz PDFContext', 'Fixture Writer']) expect(all).not.toContain(s);
+    expect(all).toContain('Please fix this number');
+    expect(removed).toContainEqual({ field: 'Comment author', source: 'comment', value: 'Jane Reviewer' });
   });
 });
 
@@ -104,7 +195,7 @@ describe('batch', () => {
     const out = await batchScrub(files);
     expect(out.every((r) => r.ok)).toBe(true);
     for (const r of out) {
-      expect(asLatin1(r.bytes!)).not.toContain('John Doe');
+      expect(await deepText(r.bytes!)).not.toContain('John Doe');
     }
   });
 });

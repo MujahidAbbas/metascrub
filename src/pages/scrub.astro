@@ -3,9 +3,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PdfTool from '../components/PdfTool.svelte';
 
 const faqs = [
-  { q: 'Does my PDF get uploaded?', a: 'No. MetaScrub runs entirely in your browser. Your file is read into the tab, processed in memory, and the clean copy is handed straight back to you. Nothing is sent to any server.' },
-  { q: 'What metadata gets removed?', a: 'Everything: the Info-dictionary fields (Title, Author, Subject, Keywords, Creator, Producer, creation and modification dates) and the embedded XMP packet, including software fingerprints like “Microsoft Word”.' },
-  { q: 'Will the document content change?', a: 'No. Scrubbing only strips metadata. The visible pages, text, and images are untouched — only the hidden data about who/what/when is removed.' },
+  { q: 'Does my PDF get uploaded?', a: 'No. MetaScrub runs entirely in your browser. Your file is read into the tab, processed in memory, and the clean copy is handed straight back to you. The page’s Content-Security-Policy (connect-src \'none\') stops it from making any network request at all, which you can confirm in your browser’s developer tools.' },
+  { q: 'What metadata gets removed?', a: 'The whole Info dictionary, including non-standard fields like Company; the XMP packet and any XMP attached to pages or images, including software fingerprints like “Microsoft Word”; app-private data; the author names and timestamps on comments; and old metadata from earlier saves that a reader no longer shows but the file still contains. The report lists everything removed.' },
+  { q: 'Will the document content change?', a: 'No. Scrubbing only strips metadata. The visible pages, text, images, and comment text are untouched; only the hidden data about who, what and when is removed.' },
 ];
 
 const faqLd = {

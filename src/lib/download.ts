@@ -22,9 +22,19 @@ export async function downloadZipped(
   zipName = 'metascrub.zip',
 ): Promise<void> {
   const blob = await downloadZip(
-    entries.map((e) => ({ name: e.name, input: e.bytes })),
+    uniqueNames(entries).map((e) => ({ name: e.name, input: e.bytes })),
   ).blob();
   triggerDownload(blob, zipName);
+}
+
+/** Two "resume.pdf" from different folders: "resume.scrubbed.pdf", "resume.scrubbed (2).pdf". */
+function uniqueNames<T extends { name: string }>(entries: T[]): T[] {
+  const seen = new Map<string, number>();
+  return entries.map((e) => {
+    const n = (seen.get(e.name) ?? 0) + 1;
+    seen.set(e.name, n);
+    return n === 1 ? e : { ...e, name: e.name.replace(/(\.[^.]+)?$/, ` (${n})$1`) };
+  });
 }
 
 /** "resume.pdf" + "scrubbed" -> "resume.scrubbed.pdf" */
