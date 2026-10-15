@@ -83,10 +83,12 @@ time and an in-post tool card; header GitHub icon, nav fits at 320 px; four-colu
 Checked: 23 tests, build, typecheck; downloads read back with `pdfinfo`; 44 token pairs all >= 4.5:1 (lowest 4.68);
 no horizontal scroll at 320/360/390 px. No new dependencies; engine (`src/lib`) untouched.
 
+Production 2026-10-15: approved after a local review; `main` fast-forwarded 7a8717e → e191705 and pushed; Vercel
+live in ~25 s. Live check (curl): all 7 pages 200, `/scrub/` 308s to `/scrub`, CSP `connect-src 'none'` served,
+home asset hashes equal the local build of e191705, all 3 chunks 200.
+
 ## Waiting on Mujahid
 
-- Review the before/after in the doc above, then approve merging `design-overhaul-2026-10` into `main`
-  (a push to `main` deploys to production on Vercel).
 
 - Recheck GSC Sitemaps after 2026-10-17: status should be "Success" with 7 discovered pages.
   Still "Couldn't fetch" with a "Last read" date means a real fetch failure to dig into.
@@ -118,5 +120,7 @@ no horizontal scroll at 320/360/390 px. No new dependencies; engine (`src/lib`) 
 - An invalid PDF shows the raw parser error ("Cannot read properties of undefined (reading 'get')"), not the
   friendly InvalidPdfError text. Pre-existing; the redesign shows it on load instead of on Scrub.
 - Created/Modified dates are not editable in Edit (engine supports them; no UI yet).
+- `public/og.png` (social card, also the README image) still shows the old red redaction bars; the site now
+  uses struck values and risk tags. Headline, logo and colors still match.
 - Real-phone check: the dropzone shows "Choose PDFs to check" on touch devices via `(pointer: coarse)`; the
   headless pass emulates width, not pointer type, so this copy was not seen rendered.
